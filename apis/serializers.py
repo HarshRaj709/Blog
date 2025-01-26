@@ -8,11 +8,11 @@ from django.contrib.auth.models import User
 #         fields = '__all__'
 
 class UserRegistration(serializers.ModelSerializer):
-    password = serializers.CharField(required = True,write_only=True)       #now only username and email will show in the response
+    password2 = serializers.CharField(required = True,write_only=True)       #now only username and email will show in the response
 
     class Meta:
         model = User
-        fields = ['username','email','password']            #,'password2'
+        fields = ['username','email','password','password2']            #
 
     
     def validate_email(self, value):
@@ -26,12 +26,16 @@ class UserRegistration(serializers.ModelSerializer):
             raise serializers.ValidationError('username already used, try with different username')
         return data
     
-    # def validate(self,data):
-    #     if data['password']!=data['password2']:
-    #         raise serializers.ValidationError('Password do not match')
-    #     return data
+    def validate(self,data):
+        if data['password']!=data['password2']:
+            raise serializers.ValidationError('Password do not match')
+        return data
     
     def create(self, validated_data):
-        # validated_data.pop('password2')
+        validated_data.pop('password2')
         user = User.objects.create_user(**validated_data)
         return user
+    
+class LoginSerializers(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField(required=True)
