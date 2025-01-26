@@ -1,13 +1,26 @@
 from rest_framework import serializers
-from .models import Blog
+from .models import Blog,Category
 from django.contrib.auth.models import User
 
 class BlogSerializer(serializers.ModelSerializer):
     writer = serializers.CharField(source='writer.username', read_only=True)
+    category_name = serializers.CharField(source='category.category_name', read_only=True)  # Show category name
+
     class Meta:
         model = Blog
-        fields = ["id","writer","title","content","content_image","created_at","updated_at"]
-        # fields = '__all__'
+        fields = ['id', 'writer', 'title', 'content', 'category', 'category_name', 'content_image', 'created_at', 'updated_at']
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = '__all__'
+        
+
+    def validate(self, data):
+        category_name = data['category_name']
+        if Category.objects.filter(category_name=category_name).exists():
+            raise serializers.ValidationError('Category already Exists')
+        return data
 
 class UserRegistration(serializers.ModelSerializer):
     password2 = serializers.CharField(required = True,write_only=True)       #now only username and email will show in the response

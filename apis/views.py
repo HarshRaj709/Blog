@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework.viewsets import ModelViewSet
-from .models import Blog
-from .serializers import UserRegistration, LoginSerializers,BlogSerializer
+from .models import Blog,Category
+from .serializers import UserRegistration, LoginSerializers,BlogSerializer,CategorySerializer
 from rest_framework.generics import ListAPIView,UpdateAPIView,CreateAPIView,DestroyAPIView
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -12,6 +12,7 @@ from django.contrib.auth import login,authenticate,logout
 from rest_framework_simplejwt.tokens import AccessToken,RefreshToken
 from rest_framework.permissions import IsAuthenticated
 from .permissions import IsOwnerOrAdmin
+from rest_framework.filters import SearchFilter,OrderingFilter
 
 
 # Create your views here.
@@ -91,10 +92,27 @@ class LogoutUser(APIView):
         response.delete_cookie('access_token')
         return response
     
+class CategoryView(APIView):
+    def get(self,request,format=None):
+        Categories = Category.objects.all()
+        serializer = CategorySerializer(Categories,many=True)
+        if serializer:
+            return Response(serializer.data,status=status.HTTP_200_OK)
+        else:
+            return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+    def post(self,request,format=None):
+        serializer = CategorySerializer(data = request.data)
+        if serializer.is_valid():
+            serializer.save()
+            category_name = serializer.validated_data['category_name']
+            return Response({"message":f"category added successfully {category_name}"},status=status.HTTP_201_CREATED)
+    
 class Listofall(ListAPIView):
     # permission_classes = [IsAuthenticated]
-    queryset = Blog.objects.all()
+    queryset = Blog.objects.all().order_by('-created_at')
     serializer_class = BlogSerializer
+    filter_backends = [SearchFilter]
+    search_fields = ['title','category__category_name']               #?search=mera
 
 class CreateBlog(CreateAPIView):
     permission_classes = [IsAuthenticated]

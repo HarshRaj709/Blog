@@ -16,5 +16,6 @@ urlpatterns = [
     path('Blogs/<int:pk>/update/',views.UpdateBlog.as_view(),name='update'),
     path('delete/<int:pk>/',views.DeleteBlog.as_view(),name='delete'),
     path('userblog/',views.UserBlog.as_view(),name='Userblog'),
+    path('blog_cat/',views.CategoryView.as_view(),name='categories')
 ]
 
