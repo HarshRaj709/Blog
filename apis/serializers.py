@@ -2,10 +2,12 @@ from rest_framework import serializers
 from .models import Blog
 from django.contrib.auth.models import User
 
-# class BlogSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Blog
-#         fields = '__all__'
+class BlogSerializer(serializers.ModelSerializer):
+    writer = serializers.CharField(source='writer.username', read_only=True)
+    class Meta:
+        model = Blog
+        fields = ["id","writer","title","content","content_image","created_at","updated_at"]
+        # fields = '__all__'
 
 class UserRegistration(serializers.ModelSerializer):
     password2 = serializers.CharField(required = True,write_only=True)       #now only username and email will show in the response

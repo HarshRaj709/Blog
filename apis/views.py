@@ -1,8 +1,8 @@
 from django.shortcuts import render
 from rest_framework.viewsets import ModelViewSet
 from .models import Blog
-from .serializers import UserRegistration, LoginSerializers
-from rest_framework.mixins import CreateModelMixin
+from .serializers import UserRegistration, LoginSerializers,BlogSerializer
+from rest_framework.generics import ListAPIView,UpdateAPIView,CreateAPIView,DestroyAPIView
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -11,6 +11,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth import login,authenticate,logout
 from rest_framework_simplejwt.tokens import AccessToken,RefreshToken
 from rest_framework.permissions import IsAuthenticated
+from .permissions import IsOwnerOrAdmin
 
 
 # Create your views here.
@@ -89,6 +90,50 @@ class LogoutUser(APIView):
         response = Response({"message":"Logged out","username":username},status=status.HTTP_200_OK)
         response.delete_cookie('access_token')
         return response
+    
+class Listofall(ListAPIView):
+    # permission_classes = [IsAuthenticated]
+    queryset = Blog.objects.all()
+    serializer_class = BlogSerializer
+
+class CreateBlog(CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    queryset = Blog.objects.all()
+    serializer_class = BlogSerializer
+
+    def perform_create(self, serializer):       #this method runs after the serialization found to be valid
+        serializer.save(writer=self.request.user)
+
+class UpdateBlog(UpdateAPIView):
+    permission_classes = [IsOwnerOrAdmin,IsAuthenticated]           #Unauthorized users receive a 403 Forbidden or 401 Unauthorized response
+    queryset = Blog.objects.all()
+    serializer_class = BlogSerializer
+
+class DeleteBlog(DestroyAPIView):
+    permission_classes = [IsOwnerOrAdmin,IsAuthenticated]
+    queryset = Blog.objects.all()
+    serializer_class = BlogSerializer
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({"message": f"Blog '{instance.title}' has been successfully deleted."},status=status.HTTP_204_NO_CONTENT)
+    
+# class UserBlog(APIView):
+#     permission_classes = [IsAuthenticated,IsOwnerOrAdmin]
+#     def get(self,request,format=None):
+#         blogs = Blog.objects.filter(writer=request.user)
+#         serializer = BlogSerializer(blogs,many=True)
+#         return Response(serializer.data,status=status.HTTP_200_OK)
+
+class UserBlog(generics.ListAPIView):
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
+    serializer_class = BlogSerializer
+
+    def get_queryset(self):
+        return Blog.objects.filter(writer=self.request.user)
+    
+
 
 
 
