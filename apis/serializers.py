@@ -1,6 +1,12 @@
 from rest_framework import serializers
-from .models import Blog,Category
+from .models import Blog,Category,AddUserInfo
 from django.contrib.auth.models import User
+
+class AddUserInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AddUserInfo
+        fields = ["bio","profile_picture"]
+        read_only_fields = ['user']
 
 class BlogSerializer(serializers.ModelSerializer):
     writer = serializers.CharField(source='writer.username', read_only=True)
@@ -54,3 +60,4 @@ class UserRegistration(serializers.ModelSerializer):
 class LoginSerializers(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField(required=True)
+
