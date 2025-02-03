@@ -16,6 +16,19 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 
+from decouple import config
+
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', cast=bool)
+EMAIL_HOST = config('EMAIL_HOST')
+EMAIL_PORT = config('EMAIL_PORT', cast=int)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+
+FRONTEND_URL = "https://Harsh-Checking.com"
+
+
+
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -29,6 +42,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'apis',
+    'authentication',
+    'blogs',
 ]
 
 MIDDLEWARE = [
@@ -124,12 +139,15 @@ from datetime import timedelta
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=5),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
-    "ROTATE_REFRESH_TOKENS": False,
-    "BLACKLIST_AFTER_ROTATION": True,
-    "UPDATE_LAST_LOGIN": False,
+    
+    'ROTATE_REFRESH_TOKENS': False,     # Rotate refresh tokens to prevent reuse
+    'BLACKLIST_AFTER_ROTATION': True,  # Automatically blacklist tokens after rotation
+    'CHECK_REVOKE_TOKEN': True, 
 }
 
 REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE':5,
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         # 'apis.authentication.CookieAuthentication',
