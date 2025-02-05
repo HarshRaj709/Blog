@@ -13,8 +13,8 @@
     6   -----------------------------------------------     Advanced Features in Pytest
 
 Applied on 
-    blogs/tests/blog_tests.py
-    authentication/tests/authentication_tests.py
+    blogs/tests/blog_tests.py   \n
+    authentication/tests/authentication_tests.py    \n
 
 
 Some Important Commands
