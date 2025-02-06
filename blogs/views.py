@@ -75,7 +75,7 @@ class UserInfoViews(CreateAPIView):
             serializer = self.get_serializer(user_info, data=request.data,partial=True)
             if serializer.is_valid():
                 serializer.save(user=request.user)
-                return Response({"msg":"User Info added successfully"},status=status.HTTP_201_CREATED)
+                return Response({"msg":f"{user_info.user.username} Info added successfully"},status=status.HTTP_201_CREATED)
             return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
         except AddUserInfo.DoesNotExist:
             serializer = self.get_serializer(data=request.data)

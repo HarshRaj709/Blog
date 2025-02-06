@@ -42,33 +42,20 @@ class UserRegistrationView(CreateAPIView):
 
 class LoginUser(CreateAPIView):
     serializer_class = LoginSerializers
-    MAX_FAILED_ATTEMPTS = 3  # Maximum allowed failed login attempts
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        username = serializer.validated_data['username']
-        password = serializer.validated_data['password']
+        user = authenticate(username=serializer.validated_data['username'], password=serializer.validated_data['password'])
 
-        try:
-            user = User.objects.get(username=username)
-            user_info = AddUserInfo.objects.get(user=user)
-        except User.DoesNotExist:
-            return Response({"msg": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
+        if not user:
+            return Response({"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Attempt authentication
-        authenticated_user = authenticate(username=username, password=password)
+        # Reset failed login attempts
+        AddUserInfo.objects.filter(user=user).update(failed_login_attempts=0)
 
-        if authenticated_user is not None:
-            # Reset failed login attempts on successful login
-            user_info.failed_login_attempts = 0
-            user_info.save()
-
-            # Generate tokens for the user
-            token = get_tokens(authenticated_user)
-            return Response({"msg": "Login Successful", "token": token}, status=status.HTTP_200_OK)
-        return Response({"Error":'Wrong Credentials'},status=status.HTTP_400_BAD_REQUEST)
+        return Response({"msg": "Login Successful", "token": get_tokens(user)}, status=status.HTTP_200_OK)
     #     else:
     #         # Increment failed login attempts
     #         user_info.failed_login_attempts += 1
