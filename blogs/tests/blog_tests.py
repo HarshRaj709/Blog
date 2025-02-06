@@ -11,31 +11,9 @@ from authentication.models import AddUserInfo
 # Mocking
 from unittest.mock import patch
 
+
 User = get_user_model()
 
-
-# @pytest.fixture
-# def setup_test_data(db):
-#     client = APIClient()
-#     user = User.objects.create(username='Paneer', password='pass123')
-#     refresh = RefreshToken.for_user(user)
-#     client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
-#     category = Category.objects.create(category_name='Tech')
-#     blog = Blog.objects.create(title="Mera Bdla", content="Mera Bdla content", category=category, writer=user)
-#     user_info = AddUserInfo.objects.create(user=user, bio='kala katha')
-#     with open('/home/savera/Downloads/PHOTO.jpeg', 'rb') as image:
-#         image_data = image.read()
-#     image = SimpleUploadedFile(name='image.jpg', content=image_data, content_type='image/jpeg')
-
-#     return {
-#         "client": client,
-#         "user": user,
-#         "refresh": refresh,
-#         "category": category,
-#         "blog": blog,
-#         "user_info": user_info,
-#         "image": image
-#     }
 
 @pytest.fixture
 def client():
@@ -47,6 +25,7 @@ def user(db):
     user = User.objects.create(username='Paneer', password='pass123')
     user_info = AddUserInfo.objects.create(user=user, bio='kala katha')
     return user
+
 
 @pytest.fixture
 def refresh_token(user):
@@ -65,10 +44,12 @@ def category_setup(db):
     category = Category.objects.create(category_name='Tech')
     return category
 
+
 @pytest.fixture
 def blog_setup(user,category_setup):
     blog = Blog.objects.create(title="Mera Bdla", content="Mera Bdla content", category=category_setup, writer=user)
     return blog
+
 
 @pytest.fixture
 def image_setup():
@@ -102,12 +83,14 @@ class TestBlog:
         assert response.status_code == status.HTTP_200_OK
         assert response.data['writer'] == 'mock_writer'
 
+
     @pytest.mark.slow
     def test_create_blog(self,authenticated_user,user,category_setup,image_setup):
         url = reverse('create')
         data = {"writer":user,"title": "Mera Bdla", "content": "Mera Bdla content","category": category_setup.id, "content_image":image_setup}
         response = authenticated_user.post(url, data)
         assert response.status_code == status.HTTP_201_CREATED
+
 
     def test_update_blog(self, blog_setup,authenticated_user):
         url = reverse('update', args=[blog_setup.id])
@@ -116,15 +99,18 @@ class TestBlog:
         assert response.status_code == status.HTTP_200_OK
         assert response.data['title'] == 'changed'
 
+
     def test_delete_blog(self,blog_setup, authenticated_user):
         url = reverse('delete', args=[blog_setup.id])
         response = authenticated_user.delete(url)
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
+
     def test_get_user_blogs(self, authenticated_user):
         url = reverse('Userblog')
         response = authenticated_user.get(url)
         assert response.status_code == status.HTTP_200_OK
+
 
     def test_create_blog_category(self, authenticated_user):
         url = reverse('categories')
@@ -132,6 +118,7 @@ class TestBlog:
         response = authenticated_user.post(url, data)
         assert response.status_code == status.HTTP_201_CREATED
         assert 'Health' in response.data['message'] 
+
 
     def test_get_user_info(self,user,blog_setup,authenticated_user):
         url = reverse('userinfo')
