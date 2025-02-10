@@ -4,8 +4,6 @@ from rest_framework.test import APIClient
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.urls import reverse
-from django.core.files.uploadedfile import SimpleUploadedFile
-from authentication.models import AddUserInfo  
 
 User = get_user_model()
 
@@ -17,7 +15,6 @@ def client():
 @pytest.fixture
 def user_creation(db):
     user = User.objects.create_user(username="testuser", password="password123")
-    AddUserInfo.objects.create(user=user, bio="Local Bio")
     return user
 
 @pytest.fixture

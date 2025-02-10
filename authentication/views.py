@@ -52,41 +52,8 @@ class LoginUser(CreateAPIView):
         if not user:
             return Response({"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Reset failed login attempts
-        AddUserInfo.objects.filter(user=user).update(failed_login_attempts=0)
-
         return Response({"msg": "Login Successful", "token": get_tokens(user)}, status=status.HTTP_200_OK)
-    #     else:
-    #         # Increment failed login attempts
-    #         user_info.failed_login_attempts += 1
-    #         user_info.save()
-
-    #         # Check if the maximum failed attempts have been reached
-    #         if user_info.failed_login_attempts >= self.MAX_FAILED_ATTEMPTS:
-    #             # Blacklist all tokens for the user
-    #             self.blacklist_user_tokens(user)  # Pass the User object
-    #             return Response(
-    #                 {"msg": "Too many failed attempts. All sessions have been logged out."},
-    #                 status=status.HTTP_400_BAD_REQUEST
-    #             )
-    #         else:
-    #             return Response({"msg": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
-
-    # def blacklist_user_tokens(self, user):
-    #     try:
-    #         # Retrieve all outstanding tokens for the user
-    #         outstanding_tokens = OutstandingToken.objects.filter(user=user)
-
-    #         for token in outstanding_tokens:
-    #             # Check if the token is already blacklisted
-    #             if not BlacklistedToken.objects.filter(token=token).exists():
-    #                 # Blacklist the token
-    #                 BlacklistedToken.objects.create(token=token)
-
-    #         print(f"All tokens blacklisted for user: {user.username}")
-    #     except Exception as e:
-    #         print(f"Error blacklisting tokens for user {user.username}: {e}")
-
+    
 
 class Password_Reset(APIView):
     def post(self, request, format=None):
