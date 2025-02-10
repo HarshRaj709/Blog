@@ -39,6 +39,56 @@ class UserRegistrationView(CreateAPIView):
             return Response({"msg":serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
     
 
+from google.oauth2 import id_token
+from google.auth.transport import requests
+from django.conf import settings
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.contrib.auth.models import User
+from .models import AddUserInfo
+from .views import get_tokens
+
+class GoogleLoginView(APIView):
+    def post(self, request):
+        token = request.data.get('token')
+
+        try:
+            # Verify the token
+            idinfo = id_token.verify_oauth2_token(token, requests.Request(), settings.GOOGLE_OAUTH2_CLIENT_ID)
+
+            # Get user info
+            userid = idinfo['sub']
+            email = idinfo['email']
+            name = idinfo.get('name', '')
+            
+            # Check if user exists
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                # Create a new user
+                user = User.objects.create_user(username=email, email=email, first_name=name)
+                AddUserInfo.objects.create(user=user)
+
+            # Generate tokens
+            tokens = get_tokens(user)
+
+            return Response({
+                'msg': 'Login Successful',
+                'tokens': tokens,
+                'user': {
+                    'id': user.id,
+                    'email': user.email,
+                    'name': user.first_name,
+                }
+            }, status=status.HTTP_200_OK)
+
+        except ValueError:
+            return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
 
 class LoginUser(CreateAPIView):
     serializer_class = LoginSerializers

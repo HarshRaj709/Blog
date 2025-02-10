@@ -154,3 +154,5 @@ REST_FRAMEWORK = {
         # 'rest_framework_simplejwt.authentication.JWTAuthentication',
      ),
 }
+
+GOOGLE_OAUTH2_CLIENT_ID = 'your-google-oauth2-client-id'
