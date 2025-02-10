@@ -1,125 +1,135 @@
 import pytest
-from blogs.models import Blog,Category
-from authentication.models import AddUserInfo
-from django.urls import reverse
-from rest_framework import status
 from django.contrib.auth import get_user_model
-from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.test import APIClient
+from rest_framework import status
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
+from blogs.models import Blog, Category
+from authentication.models import AddUserInfo
 
-#Mocking
+# Mocking
 from unittest.mock import patch
+
 
 User = get_user_model()
 
 
-@pytest.mark.django_db
+@pytest.fixture
+def client():
+    return APIClient()
+
+
+@pytest.fixture
+def user(db):
+    user = User.objects.create(username='Paneer', password='pass123')
+    user_info = AddUserInfo.objects.create(user=user, bio='kala katha')
+    return user
+
+
+@pytest.fixture
+def refresh_token(user):
+    refresh = RefreshToken.for_user(user)
+    return refresh
+
+
+@pytest.fixture
+def authenticated_user(client,refresh_token):
+    client.credentials(HTTP_AUTHORIZATION = f'Bearer {refresh_token.access_token}')
+    return client
+
+
+@pytest.fixture
+def category_setup(db):
+    category = Category.objects.create(category_name='Tech')
+    return category
+
+
+@pytest.fixture
+def blog_setup(user,category_setup):
+    blog = Blog.objects.create(title="Mera Bdla", content="Mera Bdla content", category=category_setup, writer=user)
+    return blog
+
+
+@pytest.fixture
+def image_setup():
+    with open('/home/savera/Downloads/PHOTO.jpeg','rb') as f:
+        image_data = f.read()
+    image = SimpleUploadedFile(name='image.jpg', content=image_data, content_type='image/jpeg')
+    return image
+    
+
+
 class TestBlog:
-    @pytest.fixture(autouse=True,scope="function")      #runs each time the function executes
-    # @pytest.fixture(autouse=True,scope="module")        # causing error as in this only single time fixture is running
-    # @pytest.fixture(autouse=True,scope="class")         # causing error as in this only single time fixture is running, use this when no database interaction is happening within class, or expensive setup.
-    # @pytest.fixture(autouse=True,scope="session")         # causing error as in this only single time fixture is running, use this when no database interaction is happening within class, or expensive setup.
-    def setup(self,db):
-        """THis is Docstring for blog testing Fixtures"""
-        self.client = APIClient()
-        self.category = Category.objects.create(category_name='name')
-        self.user = User.objects.create(username='Paneer',password='pass123')
-        self.blog = Blog.objects.create(title="Mera Bdla",content="Mera Bdla content",category=self.category,writer=self.user)
-        self.refresh = RefreshToken.for_user(self.user)
-        self.UserInfo = AddUserInfo.objects.create(user = self.user,bio='kala katha')
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.refresh.access_token}")
-        with open('/home/savera/Downloads/PHOTO.jpeg', 'rb')as image:
-            image_data = image.read()
-        self.image = SimpleUploadedFile(name='image.jpg', content=image_data, content_type='image/jpeg')
-        # yield
-        # print('Execution Complete')
+    def test_blogs(self,client,blog_setup):
+        url = reverse('blogs_get')
+        response =client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['results'][0]['title'] == "Mera Bdla"
 
 
 
-    # def test_blog(self):
-    #     url = reverse('Blogs_get')
-    #     response = self.client.get(url)
-    #     assert response.status_code == status.HTTP_200_OK
-    #     assert len(response.data)>0
-    #     print(response.data)
-
-
-#Mocking in pytest
     @patch("rest_framework.test.APIClient.get")
-    def test_blog(self,mock_get):       #The mock_get parameter is automatically injected by the @patch decorator. it replace real client.get with the mocked one.
+    def test_mocked_blog(self, mock_get, client):
         mock_data = {
-            'id': 1, 'writer': 'mock_writer', 'title': 'First_mocked', 'content': 'Mocked content', 'category': 1, 'category_name': 'mocked category'
+            'id': 1, 'writer': 'mock_writer', 'title': 'First_mocked',
+            'content': 'Mocked content', 'category': 1, 'category_name': 'mocked category'
         }
         mock_get.return_value.status_code = status.HTTP_200_OK
         mock_get.return_value.data = mock_data
 
         url = reverse('blogs_get')
-        response = self.client.get(url)
+        response = client.get(url)
         assert response.status_code == status.HTTP_200_OK
         assert response.data['writer'] == 'mock_writer'
-        print(response.data)
 
-    
-    @pytest.mark.slow           #Marked with slow
-    def test_blogcreate(self):
+
+    @pytest.mark.slow
+    def test_create_blog(self,authenticated_user,user,category_setup,image_setup):
         url = reverse('create')
-        data = {"title":"Mera Bdla","content":"Mera Bdla content","category":self.category.id,"content_image":self.image}
-        response = self.client.post(url,data)
+        data = {"writer":user,"title": "Mera Bdla", "content": "Mera Bdla content","category": category_setup.id, "content_image":image_setup}
+        response = authenticated_user.post(url, data)
         assert response.status_code == status.HTTP_201_CREATED
-        print('Slow Run')
-        
 
-    def test_blogupdate(self):
-        url = reverse('update',args=[self.blog.id])
-        data = {'title':'changed'}
-        response = self.client.patch(url,data)
+
+    def test_update_blog(self, blog_setup,authenticated_user):
+        url = reverse('update', args=[blog_setup.id])
+        data = {'title': 'changed'}
+        response = authenticated_user.patch(url, data)
         assert response.status_code == status.HTTP_200_OK
         assert response.data['title'] == 'changed'
-        # print(response.data['title'])
 
-    def test_blogdelete(self):
-        url=reverse('delete',args = [self.blog.id])
-        response = self.client.delete(url)
+
+    def test_delete_blog(self,blog_setup, authenticated_user):
+        url = reverse('delete', args=[blog_setup.id])
+        response = authenticated_user.delete(url)
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    def test_blogUser(self):
+
+    def test_get_user_blogs(self, authenticated_user):
         url = reverse('Userblog')
-        response = self.client.get(url)
+        response = authenticated_user.get(url)
         assert response.status_code == status.HTTP_200_OK
-        #print(response.data)
 
-    def test_blogcategory(self):
-        url =reverse('categories')
-        data = {'category_name':'Tech'}
-        response = self.client.post(url,data)
-        #print(response.data)
+
+    def test_create_blog_category(self, authenticated_user):
+        url = reverse('categories')
+        data = {'category_name': 'Health'}
+        response = authenticated_user.post(url, data)
         assert response.status_code == status.HTTP_201_CREATED
+        assert 'Health' in response.data['message'] 
 
-    def test_userinfo(self):
+
+    def test_get_user_info(self,user,blog_setup,authenticated_user):
         url = reverse('userinfo')
-        response = self.client.get(url)
-        # print(response.data)
+        response = authenticated_user.get(url)
         assert response.status_code == status.HTTP_200_OK
-        assert 'user info' in response.data 
+        assert 'user info' in response.data
+        assert response.data['blogs'][0]['title'] == 'Mera Bdla'
 
-    def test_userinfopost(self):
+    def test_add_user_info(self, user,authenticated_user):
         url = reverse('adduserinfo')
-        data = {'user':self.user,'bio':'kala katha nhi'}
-        response = self.client.post(url,data)
+        data = {'user': user, 'bio': 'Updated Bio'}
+        response = authenticated_user.post(url, data)
         assert response.status_code == status.HTTP_201_CREATED
-
-    
-
-    def divide(self,x, y):
-        return x / y  # This will raise ZeroDivisionError if y=0
-
-    def test_divide_by_zero(self):
-        with pytest.raises(ZeroDivisionError):  # Expects an exception
-            self.divide(10, 30)                 #self = <blog_tests.TestBlog object at 0x7c7357a9ae40>
-
-    def test_divide_by_zero(self):
-       with pytest.raises(ZeroDivisionError):  # Expects an exception
-            self.divide(10,0)                     # E       Failed: DID NOT RAISE <class 'ZeroDivisionError'>
-
-                                                    # blogs/tests/blog_tests.py:89: Failed
+        assert 'Paneer' in response.data['msg']

@@ -42,64 +42,18 @@ class UserRegistrationView(CreateAPIView):
 
 class LoginUser(CreateAPIView):
     serializer_class = LoginSerializers
-    MAX_FAILED_ATTEMPTS = 3  # Maximum allowed failed login attempts
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        username = serializer.validated_data['username']
-        password = serializer.validated_data['password']
+        user = authenticate(username=serializer.validated_data['username'], password=serializer.validated_data['password'])
 
-        try:
-            user = User.objects.get(username=username)
-            user_info = AddUserInfo.objects.get(user=user)
-        except User.DoesNotExist:
-            return Response({"msg": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
+        if not user:
+            return Response({"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Attempt authentication
-        authenticated_user = authenticate(username=username, password=password)
-
-        if authenticated_user is not None:
-            # Reset failed login attempts on successful login
-            user_info.failed_login_attempts = 0
-            user_info.save()
-
-            # Generate tokens for the user
-            token = get_tokens(authenticated_user)
-            return Response({"msg": "Login Successful", "token": token}, status=status.HTTP_200_OK)
-        return Response({"Error":'Wrong Credentials'},status=status.HTTP_400_BAD_REQUEST)
-    #     else:
-    #         # Increment failed login attempts
-    #         user_info.failed_login_attempts += 1
-    #         user_info.save()
-
-    #         # Check if the maximum failed attempts have been reached
-    #         if user_info.failed_login_attempts >= self.MAX_FAILED_ATTEMPTS:
-    #             # Blacklist all tokens for the user
-    #             self.blacklist_user_tokens(user)  # Pass the User object
-    #             return Response(
-    #                 {"msg": "Too many failed attempts. All sessions have been logged out."},
-    #                 status=status.HTTP_400_BAD_REQUEST
-    #             )
-    #         else:
-    #             return Response({"msg": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
-
-    # def blacklist_user_tokens(self, user):
-    #     try:
-    #         # Retrieve all outstanding tokens for the user
-    #         outstanding_tokens = OutstandingToken.objects.filter(user=user)
-
-    #         for token in outstanding_tokens:
-    #             # Check if the token is already blacklisted
-    #             if not BlacklistedToken.objects.filter(token=token).exists():
-    #                 # Blacklist the token
-    #                 BlacklistedToken.objects.create(token=token)
-
-    #         print(f"All tokens blacklisted for user: {user.username}")
-    #     except Exception as e:
-    #         print(f"Error blacklisting tokens for user {user.username}: {e}")
-
+        return Response({"msg": "Login Successful", "token": get_tokens(user)}, status=status.HTTP_200_OK)
+    
 
 class Password_Reset(APIView):
     def post(self, request, format=None):
