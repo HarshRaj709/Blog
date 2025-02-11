@@ -32,12 +32,3 @@ class CategorySerializer(serializers.ModelSerializer):
         if Category.objects.filter(category_name=category_name).exists():
             raise serializers.ValidationError('Category already Exists')
         return data
-
-
-    
-
-
-
-
-# questions:
-    #1. how we store refresh and access token in frontend?

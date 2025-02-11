@@ -43,7 +43,7 @@ class UserRegistration(serializers.ModelSerializer):
     
 class LoginSerializers(serializers.Serializer):
     username = serializers.CharField()
-    password = serializers.CharField(required=True)
+    password = serializers.CharField(write_only=True,required=True)
 
 
 class Password_ResetSerializer(serializers.Serializer):
@@ -66,28 +66,25 @@ class Password_changedSerializer(serializers.Serializer):
         uidb64 = self.context.get('uidb64')
         token = self.context.get('token')
 
-        # Check if passwords match
+        
         if password != password2:
             raise serializers.ValidationError({'password2': 'Passwords do not match'})
 
-        # Decode the user ID
+        
         try:
             user_id = smart_str(urlsafe_base64_decode(uidb64))
             user = User.objects.get(id=user_id)
         except (User.DoesNotExist, ValueError, TypeError):
             raise serializers.ValidationError({'uidb64': 'Invalid user ID'})
 
-        # Verify the reset token
+        
         if not PasswordResetTokenGenerator().check_token(user, token):
             raise serializers.ValidationError({'token': 'Invalid or expired token'})
-
-        # Save the user object for later use in the create method
         self.user = user
-
         return data
 
 
-    def create(self, validated_data):
+    def update(self, validated_data):
         user = self.user
         user.set_password(validated_data['password'])
         user.save()
@@ -95,10 +92,10 @@ class Password_changedSerializer(serializers.Serializer):
         if refresh_token:
             try:
                 token = RefreshToken(refresh_token)
-                token.blacklist()  # Blacklist the refresh token
+                token.blacklist()
             except Exception as e:
                 raise serializers.ValidationError({'refresh': 'Failed to blacklist refresh token'})
-        return validated_data
+        return user
 
 
 

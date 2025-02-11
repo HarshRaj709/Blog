@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'apis',
     'authentication',
     'blogs',
+    'drf_yasg',
 ]
 
 MIDDLEWARE = [
@@ -140,8 +141,8 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=5),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
     
-    'ROTATE_REFRESH_TOKENS': False,     # Rotate refresh tokens to prevent reuse
-    'BLACKLIST_AFTER_ROTATION': True,  # Automatically blacklist tokens after rotation
+    'ROTATE_REFRESH_TOKENS': False,     
+    'BLACKLIST_AFTER_ROTATION': True,  
     'CHECK_REVOKE_TOKEN': True, 
 }
 
@@ -150,7 +151,20 @@ REST_FRAMEWORK = {
     'PAGE_SIZE':5,
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-        # 'apis.authentication.CookieAuthentication',
-        # 'rest_framework_simplejwt.authentication.JWTAuthentication',
      ),
 }
+
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header',
+            'description': "Enter the token as: Bearer <your_token>",
+        },
+    },
+    'USE_SESSION_AUTH': False,  
+    }
+
+
+GOOGLE_OAUTH2_CLIENT_ID = '141566001075-0nael1mqchk97bel4287icuabf3nhibd.apps.googleusercontent.com'
