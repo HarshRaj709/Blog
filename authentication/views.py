@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
-from rest_framework_simplejwt.tokens import AccessToken,RefreshToken
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
 from django.conf import settings
 from .models import AddUserInfo
@@ -14,7 +14,11 @@ from django.utils.encoding import force_bytes
 from django.core.mail import send_mail
 from rest_framework import status
 from django.contrib.auth.tokens import default_token_generator
-from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+from django.shortcuts import render
+from google.oauth2 import id_token
+from google.auth.transport import requests
+from django.conf import settings
+from .models import AddUserInfo
 
 # Create your views here.
 
@@ -39,38 +43,21 @@ class UserRegistrationView(CreateAPIView):
             return Response({"msg":serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
     
 
-from google.oauth2 import id_token
-from google.auth.transport import requests
-from django.conf import settings
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from django.contrib.auth.models import User
-from .models import AddUserInfo
-from .views import get_tokens
-
 class GoogleLoginView(APIView):
     def post(self, request):
         token = request.data.get('token')
-
         try:
-            # Verify the token
             idinfo = id_token.verify_oauth2_token(token, requests.Request(), settings.GOOGLE_OAUTH2_CLIENT_ID)
+            print(idinfo)
 
-            # Get user info
             userid = idinfo['sub']
             email = idinfo['email']
             name = idinfo.get('name', '')
-            
-            # Check if user exists
             try:
                 user = User.objects.get(email=email)
             except User.DoesNotExist:
-                # Create a new user
                 user = User.objects.create_user(username=email, email=email, first_name=name)
                 AddUserInfo.objects.create(user=user)
-
-            # Generate tokens
             tokens = get_tokens(user)
 
             return Response({
@@ -141,7 +128,6 @@ class ResetPasswordAPIView(APIView):
             serializer.save()
             return Response({'msg': 'Password changed Successfully'}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    #need to blacklist the refresh token
 
 
 #Generic Logout

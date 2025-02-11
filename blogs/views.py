@@ -16,18 +16,18 @@ class Listofall(ListAPIView):
     queryset = Blog.objects.all().order_by('-created_at')
     serializer_class = BlogSerializer
     filter_backends = [SearchFilter]
-    search_fields = ['title','category__category_name','writer']               #?search=mera
+    search_fields = ['title','category__category_name','writer']               
 
 class CreateBlog(CreateAPIView):
     permission_classes = [IsAuthenticated]
     queryset = Blog.objects.all().order_by('-created_at')
     serializer_class = BlogSerializer
 
-    def perform_create(self, serializer):       #this method runs after the serialization found to be valid
+    def perform_create(self, serializer):       
         serializer.save(writer=self.request.user)
 
 class UpdateBlog(UpdateAPIView):
-    permission_classes = [IsOwnerOrAdmin,IsAuthenticated]           #Unauthorized users receive a 403 Forbidden or 401 Unauthorized response
+    permission_classes = [IsOwnerOrAdmin,IsAuthenticated]           
     queryset = Blog.objects.all().order_by('-updated_at')
     serializer_class = BlogSerializer
 
