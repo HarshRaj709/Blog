@@ -45,10 +45,6 @@ class LoginSerializers(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField(write_only=True,required=True)
 
-    class Meta:
-        model = User
-        fields = ['username','password']
-
 
 class Password_ResetSerializer(serializers.Serializer):
     email = serializers.EmailField()
